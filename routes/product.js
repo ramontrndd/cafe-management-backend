@@ -29,7 +29,7 @@ router.get(
   checkRole.checkRole,
   (req, res, next) => {
     var query =
-      "select p.id,p.name,p.description,p.status, c.id as categoryId, c.name as categoryName from product as p INNER JOIN category as c where p.categoryId = c.id";
+      "SELECT p.id, p.name, p.description, p.price, p.status, c.id as categoryId, c.name as categoryName FROM product AS p INNER JOIN category AS c ON p.categoryId = c.id";
     connection.query(query, (err, results) => {
       if (!err) {
         return res.status(200).json(results);
