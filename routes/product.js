@@ -55,8 +55,8 @@ router.get("/getByCategory/:id", auth.authenticateToken, (req, res, next) => {
 
 router.get("/getById/:id", auth.authenticateToken, (req, res, next) => {
   const id = req.params.id;
-  var query = "select id, name, description,price, from product whewre id = ?";
-  connection.query(query, (err, results) => {
+  var query = "SELECT id, name, description, price FROM product WHERE id = ?"
+  connection.query(query,[id], (err, results) => {
     if (!err) {
       return res.status(200).json(results[0]);
     } else {
@@ -124,11 +124,8 @@ router.delete(
   }
 );
 
-router.patch(
-  "/updateStatus",
-  auth.authenticateToken,
-  checkRole.checkRole,
-  (req, res, next) => {
+router.patch("/updateStatus",auth.authenticateToken,checkRole.checkRole,(req, res, next) => {
+  
     let user = req.body;
     var query = "update product set status=? where id=?";
     connection.query(query, [user.status, user.id], (err, results) => {
