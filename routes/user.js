@@ -140,7 +140,7 @@ router.patch('/update', auth.authenticateToken, checkRole.checkRole, (req, res) 
       if(results.affectedRows ==0){
         return res.status(404).json({message: "Usuário não existe"});
               }
-              return res.status(200).json({message: "Usuário atualizado com sucesso"})
+              return res.status(200).json({message: "Usuário autorizado com sucesso"})
     }
     else {
       return res.status(500).json(err);
