@@ -10,67 +10,76 @@ const auth = require('../services/authentication');
 const authentication = require('../services/authentication');
 
 
-router.post ('/generateReport', auth.authenticateToken, (req, res) => {
-const generateUuid = uuid.v1();
-const orderDetails = req.body;
-var productDetailsReport = JSON.parse(orderDetails.productDetails);
+const puppeteer = require('puppeteer');
 
-var query = "insert into bill (name,uuid,email,contactNumber,paymentMethod,total,productDetails,createdBy) values (?,?,?,?,?,?,?,?)";
-connection.query(query, [orderDetails.name,generateUuid, orderDetails.email, orderDetails.contactNumber, orderDetails.paymentMethod, orderDetails.totalAmount,orderDetails.productDetails, res.locals.email], (err, results) => {
-    if(!err){
-        ejs.renderFile(path.join(__dirname, '', "report.ejs"),{productDetails:productDetailsReport, name:orderDetails.name, email:orderDetails.email, contactNumber:orderDetails.contactNumber, paymentMethod:orderDetails.paymentMethod, totalAmount:orderDetails.totalAmount},(err, results)=>{
-           if(err){
-            return res.status(500).json(err);
-           } 
-           else{
-                pdf.create(results).toFile('./generated_pdf/'+generateUuid+".pdf", function(err, data){
-                if(err){
-                    console.log(err);
-                    return res.status(500).json(err);
-                }  
-                else {
-                    return res.status(200).json({uuid: generateUuid});
-                }
-            })
-           }
-        })
-    }
-    else{
-        return res.status(500).json(err);
-    }
-
-})
-})
-
-
-router.post ('/getPdf', auth.authenticateToken, function(req,res){
+router.post('/generateReport', auth.authenticateToken, async (req, res) => {
+    const generateUuid = uuid.v1();
     const orderDetails = req.body;
-    const pdfPath = './generated_pdf/'+orderDetails.uuid+'.pdf';
-    if(fs.existsSync(pdfPath)){
+    const productDetailsReport = JSON.parse(orderDetails.productDetails);
+
+    try {
+        // Inserir os detalhes do pedido no banco de dados
+        const query = "INSERT INTO bill (name, uuid, email, contactNumber, paymentMethod, total, productDetails, createdBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        await connection.query(query, [orderDetails.name, generateUuid, orderDetails.email, orderDetails.contactNumber, orderDetails.paymentMethod, orderDetails.totalAmount, orderDetails.productDetails, res.locals.email]);
+
+        // Renderizar o arquivo EJS para HTML
+        const htmlContent = await ejs.renderFile(path.join(__dirname, '', 'report.ejs'), { productDetails: productDetailsReport, name: orderDetails.name, email: orderDetails.email, contactNumber: orderDetails.contactNumber, paymentMethod: orderDetails.paymentMethod, totalAmount: orderDetails.totalAmount });
+
+        // Configurar o Puppeteer
+        const browser = await puppeteer.launch();
+        const page = await browser.newPage();
+        await page.setContent(htmlContent);
+
+        // Gerar o PDF
+        const pdfPath = `./generated_pdf/${generateUuid}.pdf`;
+        await page.pdf({ path: pdfPath });
+
+        // Fechar o navegador Puppeteer
+        await browser.close();
+
+        // Responder com o UUID gerado
+        return res.status(200).json({ uuid: generateUuid });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Erro ao gerar o relatório PDF' });
+    }
+});
+
+router.post('/getPdf', auth.authenticateToken, async (req, res) => {
+    const orderDetails = req.body;
+    const pdfPath = `./generated_pdf/${orderDetails.uuid}.pdf`;
+
+    if (fs.existsSync(pdfPath)) {
+        // Se o PDF existir, envie-o como resposta
         res.contentType('application/pdf');
         fs.createReadStream(pdfPath).pipe(res);
+    } else {
+        // Se o PDF não existir, gere-o
+        try {
+            // Renderizar o arquivo EJS para HTML
+            const productDetailsReport = JSON.parse(orderDetails.productDetails);
+            const htmlContent = await ejs.renderFile(path.join(__dirname, '', 'report.ejs'), { productDetails: productDetailsReport, name: orderDetails.name, email: orderDetails.email, contactNumber: orderDetails.contactNumber, paymentMethod: orderDetails.paymentMethod, totalAmount: orderDetails.totalAmount });
+
+            // Configurar o Puppeteer
+            const browser = await puppeteer.launch();
+            const page = await browser.newPage();
+            await page.setContent(htmlContent);
+
+            // Gerar o PDF
+            await page.pdf({ path: pdfPath });
+
+            // Fechar o navegador Puppeteer
+            await browser.close();
+
+            // Enviar o PDF gerado como resposta
+            res.contentType('application/pdf');
+            fs.createReadStream(pdfPath).pipe(res);
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({ error: 'Erro ao gerar ou enviar o relatório PDF' });
+        }
     }
-    else {
-        var productDetailsReport = JSON.parse(orderDetails.productDetails)
-        ejs.renderFile(path.join(__dirname, '', "report.ejs"),{productDetails:productDetailsReport, name:orderDetails.name, email:orderDetails.email, contactNumber:orderDetails.contactNumber, paymentMethod:orderDetails.paymentMethod, totalAmount:orderDetails.totalAmount},(err, results)=>{
-            if(err){
-             return res.status(500).json(err);
-            } 
-            else{
-                 pdf.create(results).toFile('./generated_pdf/'+orderDetails.uuid+".pdf", function(err, data){
-                 if(err){
-                     console.log(err);
-                     return res.status(500).json(err);
-                 }  
-                 else {
-                    res.contentType('application/pdf');
-                    fs.createReadStream(pdfPath).pipe(res);
-                 }
-             })
-            }
-         })
-    }
-})
+});
 
 
 router.get('/getBills', auth.authenticateToken, (req, res, next)=>{
