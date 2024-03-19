@@ -35,7 +35,7 @@
     <table>
       <tr>
         <th>Nome</th>
-        <th>Categoria</th>
+        <th>Produto</th>
         <th>Quantidade</th>
         <th>Preço</th>
         <th>Total</th>
@@ -46,15 +46,15 @@
 
       <tr>
         <td><%=product.name %></td>
-        <td><%=product.product %></td>
+        <td><%=product.category %></td>
         <td><%=product.quantity %></td>
-        <td><%=product.price %></td>
-        <td><%=product.total %></td>
+        <td>R$<%=product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) %></td>
+        <td>R$<%=product.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) %></td>
       </tr>
       <%});%> <%}%>
     </table>
 
-    <h3>Total: <%= totalAmount %></h3>
+    <h3 style="text-align: center;">Total: R$<%= totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) %></h3>
     <h3>Obrigado, Volte sempre!</h3>
   </body>
 </html>

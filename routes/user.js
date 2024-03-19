@@ -132,28 +132,33 @@ router.get("/get", auth.authenticateToken, checkRole.checkRole, (req, res) => {
   });
 });
 
-router.patch('/update', auth.authenticateToken, checkRole.checkRole, (req, res) => {
-  let user = req.body
-  var query = "update user set status=? where id=?"
-  connection.query (query, [user.status, user.id] , (err, results)=>{
-    if(!err){
-      if(results.affectedRows ==0){
-        return res.status(404).json({message: "Usuário não existe"});
-              }
-              return res.status(200).json({message: "Usuário autorizado com sucesso"})
-    }
-    else {
-      return res.status(500).json(err);
-    }
-  })
-})
-
+router.patch(
+  "/update",
+  auth.authenticateToken,
+  checkRole.checkRole,
+  (req, res) => {
+    let user = req.body;
+    var query = "update user set status=? where id=?";
+    connection.query(query, [user.status, user.id], (err, results) => {
+      if (!err) {
+        if (results.affectedRows == 0) {
+          return res.status(404).json({ message: "Usuário não existe" });
+        }
+        return res
+          .status(200)
+          .json({ message: "Usuário autorizado com sucesso" });
+      } else {
+        return res.status(500).json(err);
+      }
+    });
+  }
+);
 
 router.get("/checkToken", auth.authenticateToken, (req, res) => {
   return res.status(200).json({ message: "true" });
 });
 
-router.post('/changePassword', auth.authenticateToken, (req, res) => {
+router.post("/changePassword", auth.authenticateToken, (req, res) => {
   const user = req.body;
   const email = res.locals.email;
   console.log(email);
@@ -162,22 +167,23 @@ router.post('/changePassword', auth.authenticateToken, (req, res) => {
     if (!err) {
       if (results.length <= 0) {
         return res.status(400).json({ message: "Senha antiga incorreta!" });
-      } 
-      else if (results[0].password == user.oldPassword) {
+      } else if (results[0].password == user.oldPassword) {
         query = "update user set password=? where email=?";
         connection.query(query, [user.newPassword, email], (err, results) => {
           if (!err) {
-            return res.status(200).json({ message: "Senha atualizada com sucesso!" });
-          } 
-          else {
+            return res
+              .status(200)
+              .json({ message: "Senha atualizada com sucesso!" });
+          } else {
             return res.status(500).json(err);
           }
         });
       } else {
-        return res.status(400).json({ message: "Algo deu errado, tente mais tarde!" })
+        return res
+          .status(400)
+          .json({ message: "Algo deu errado, tente mais tarde!" });
       }
-    } 
-    else {
+    } else {
       return res.status(500).json(err);
     }
   });
