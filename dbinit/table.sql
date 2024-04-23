@@ -1,5 +1,10 @@
+
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root123456';
+FLUSH PRIVILEGES;
+
 -- Criar o banco de dados cafenodejs
 CREATE DATABASE IF NOT EXISTS cafenodejs;
+
 
 -- Usar o banco de dados cafenodejs
 USE cafenodejs;
