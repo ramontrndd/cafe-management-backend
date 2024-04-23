@@ -13,13 +13,13 @@ const puppeteer = require("puppeteer");
 router.post("/generateReport", auth.authenticateToken, async (req, res) => {
   const generateUuid = uuid.v1();
   const orderDetails = req.body;
-  const productDetailsReport = JSON.parse(orderDetails.productDetails);
+  var productDetailsReport = JSON.parse(orderDetails.productDetails);
 
-  try {
-    // Inserir os detalhes do pedido no banco de dados
-    const query =
-      "INSERT INTO bill (name, uuid, email, contactNumber, paymentMethod, total, productDetails, createdBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-    await connection.query(query, [
+  var query =
+    "insert into bill (name,uuid,email,contactNumber,paymentMethod,total,productDetails,createdBy) values (?,?,?,?,?,?,?,?)";
+  connection.query(
+    query,
+    [
       orderDetails.name,
       generateUuid,
       orderDetails.email,
@@ -28,49 +28,42 @@ router.post("/generateReport", auth.authenticateToken, async (req, res) => {
       orderDetails.totalAmount,
       orderDetails.productDetails,
       res.locals.email,
-    ]);
+    ],
+    async (err, results) => {
+      if (!err) {
+        try {
+          const browser = await puppeteer.launch();
+          const page = await browser.newPage();
+          await page.setContent(
+            ejs.renderFile(path.join(__dirname, "", "report.ejs"), {
+              productDetails: productDetailsReport,
+              name: orderDetails.name,
+              email: orderDetails.email,
+              contactNumber: orderDetails.contactNumber,
+              paymentMethod: orderDetails.paymentMethod,
+              totalAmount: orderDetails.totalAmount,
+            })
+          );
 
-    // Renderizar o arquivo EJS para HTML
-    const htmlContent = await ejs.renderFile(
-      path.join(__dirname, "", "report.ejs"),
-      {
-        productDetails: productDetailsReport,
-        name: orderDetails.name,
-        email: orderDetails.email,
-        contactNumber: orderDetails.contactNumber,
-        paymentMethod: orderDetails.paymentMethod,
-        totalAmount: orderDetails.totalAmount,
+          const pdfBuffer = await page.pdf({ format: "A4" });
+          await browser.close();
+
+          return res.status(200).json({ uuid: generateUuid });
+        } catch (err) {
+          console.error(err);
+          return res.status(500).json(err);
+        }
+      } else {
+        console.error(err);
+        return res.status(500).json(err);
       }
-    );
-
-    // Configurar o Puppeteer
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
-    await page.setContent(htmlContent);
-
-    // Gerar o PDF como buffer
-    const pdfBuffer = await page.pdf();
-
-    // Fechar o navegador Puppeteer
-    await browser.close();
-
-    // Enviar o PDF como resposta
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=${generateUuid}.pdf`
-    );
-    res.send(pdfBuffer);
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: "Erro ao gerar o relatório PDF" });
-  }
+    }
+  );
 });
-
 
 router.post("/getPdf", auth.authenticateToken, async (req, res) => {
   const orderDetails = req.body;
-  
+
   try {
     // Renderizar o arquivo EJS para HTML
     const productDetailsReport = JSON.parse(orderDetails.productDetails);
@@ -99,7 +92,10 @@ router.post("/getPdf", auth.authenticateToken, async (req, res) => {
 
     // Enviar o PDF gerado como resposta para o cliente
     res.contentType("application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="${orderDetails.uuid}.pdf"`);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${orderDetails.uuid}.pdf"`
+    );
     res.send(pdfBuffer);
   } catch (err) {
     console.error(err);
@@ -108,7 +104,6 @@ router.post("/getPdf", auth.authenticateToken, async (req, res) => {
       .json({ error: "Erro ao gerar ou enviar o relatório PDF" });
   }
 });
-
 
 router.get("/getBills", auth.authenticateToken, (req, res, next) => {
   var query = "select *from bill order by id DESC";

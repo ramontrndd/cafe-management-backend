@@ -1,13 +1,11 @@
+-- Criar o banco de dados cafenodejs
+
+CREATE DATABASE IF NOT EXISTS cafenodejs;
+USE cafenodejs;
 
 ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root123456';
 FLUSH PRIVILEGES;
 
--- Criar o banco de dados cafenodejs
-CREATE DATABASE IF NOT EXISTS cafenodejs;
-
-
--- Usar o banco de dados cafenodejs
-USE cafenodejs;
 
 -- Criar a tabela 'user' se ainda não existir
 CREATE TABLE IF NOT EXISTS `user` (
