@@ -1,0 +1,48 @@
+services:
+  mysqldb:
+    image: mysql:8.0
+    container_name: mysqlcontainer
+    command: --default-authentication-plugin=mysql_native_password
+    restart: unless-stopped
+    volumes:
+      - ./dbinit/table.sql:/docker-entrypoint-tabledb.d/0_table.sql
+      - $HOME/database:/var/lib/mysql
+    ports:
+      - 3306:3306
+    expose:
+      - 3306
+    environment:
+      MYSQL_DATABASE: cafenodejs
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: letmein
+      MYSQL_ROOT_PASSWORD: root123456
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysqldb
+    networks:
+      - internalnet
+
+  nodeapp:
+    container_name: nodeappcontainer
+    build: .
+    image: nodeapp:v1
+    environment:
+      DB_HOST: mysqldb  
+      DB_PORT: 3306
+      DB_USERNAME: admin
+      DB_PASSWORD: 'letmein'
+      DB_NAME: cafenodejs
+      USER: USER
+      PORT: 8080
+      ACESS_TOKEN: 66ab47a3bc19ff7956d4030c44a762288e6989fc7b0ebc130b00347844d435a2afcbbd5ec4d2b5de6106166055744f6764e1be3697b45d49aed820069c91cb76
+    ports:
+      - 8080:8080
+    expose:
+      - 8080
+    depends_on:
+      - mysqldb
+    networks:
+      - internalnet
+
+networks:
+  internalnet:
+    driver: bridge
