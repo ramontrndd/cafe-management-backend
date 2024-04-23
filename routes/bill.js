@@ -2,7 +2,6 @@ const express = require("express");
 const connection = require("../connection");
 const router = express.Router();
 const ejs = require("ejs");
-const pdf = require("html-pdf");
 const path = require("path");
 const fs = require("fs");
 const uuid = require("uuid");
