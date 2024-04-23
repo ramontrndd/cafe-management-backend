@@ -48,68 +48,67 @@ router.post("/generateReport", auth.authenticateToken, async (req, res) => {
     const page = await browser.newPage();
     await page.setContent(htmlContent);
 
-    // Gerar o PDF
-    const pdfPath = `./generated_pdf/${generateUuid}.pdf`;
-    await page.pdf({ path: pdfPath });
+    // Gerar o PDF como buffer
+    const pdfBuffer = await page.pdf();
 
     // Fechar o navegador Puppeteer
     await browser.close();
 
-    // Responder com o UUID gerado
-    return res.status(200).json({ uuid: generateUuid });
+    // Enviar o PDF como resposta
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=${generateUuid}.pdf`
+    );
+    res.send(pdfBuffer);
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Erro ao gerar o relatório PDF" });
   }
 });
 
+
 router.post("/getPdf", auth.authenticateToken, async (req, res) => {
   const orderDetails = req.body;
-  const pdfPath = `./generated_pdf/${orderDetails.uuid}.pdf`;
+  
+  try {
+    // Renderizar o arquivo EJS para HTML
+    const productDetailsReport = JSON.parse(orderDetails.productDetails);
+    const htmlContent = await ejs.renderFile(
+      path.join(__dirname, "", "report.ejs"),
+      {
+        productDetails: productDetailsReport,
+        name: orderDetails.name,
+        email: orderDetails.email,
+        contactNumber: orderDetails.contactNumber,
+        paymentMethod: orderDetails.paymentMethod,
+        totalAmount: orderDetails.totalAmount,
+      }
+    );
 
-  if (fs.existsSync(pdfPath)) {
-    // Se o PDF existir, envie-o como resposta
+    // Configurar o Puppeteer
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    await page.setContent(htmlContent);
+
+    // Gerar o PDF em memória
+    const pdfBuffer = await page.pdf();
+
+    // Fechar o navegador Puppeteer
+    await browser.close();
+
+    // Enviar o PDF gerado como resposta para o cliente
     res.contentType("application/pdf");
-    fs.createReadStream(pdfPath).pipe(res);
-  } else {
-    // Se o PDF não existir, gere-o
-    try {
-      // Renderizar o arquivo EJS para HTML
-      const productDetailsReport = JSON.parse(orderDetails.productDetails);
-      const htmlContent = await ejs.renderFile(
-        path.join(__dirname, "", "report.ejs"),
-        {
-          productDetails: productDetailsReport,
-          name: orderDetails.name,
-          email: orderDetails.email,
-          contactNumber: orderDetails.contactNumber,
-          paymentMethod: orderDetails.paymentMethod,
-          totalAmount: orderDetails.totalAmount,
-        }
-      );
-
-      // Configurar o Puppeteer
-      const browser = await puppeteer.launch();
-      const page = await browser.newPage();
-      await page.setContent(htmlContent);
-
-      // Gerar o PDF
-      await page.pdf({ path: pdfPath });
-
-      // Fechar o navegador Puppeteer
-      await browser.close();
-
-      // Enviar o PDF gerado como resposta
-      res.contentType("application/pdf");
-      fs.createReadStream(pdfPath).pipe(res);
-    } catch (err) {
-      console.error(err);
-      return res
-        .status(500)
-        .json({ error: "Erro ao gerar ou enviar o relatório PDF" });
-    }
+    res.setHeader("Content-Disposition", `attachment; filename="${orderDetails.uuid}.pdf"`);
+    res.send(pdfBuffer);
+  } catch (err) {
+    console.error(err);
+    return res
+      .status(500)
+      .json({ error: "Erro ao gerar ou enviar o relatório PDF" });
   }
 });
+
 
 router.get("/getBills", auth.authenticateToken, (req, res, next) => {
   var query = "select *from bill order by id DESC";

@@ -9,14 +9,14 @@
 
       td,
       th {
-        border: 1px solid #dDdddd;
+        border: 1px solid #dddddd;
         text-align: left;
         padding: 8px;
       }
     </style>
   </head>
   <body>
-    <h3 style="text-align: center">Café Manegement</h3>
+    <h3 style="text-align: center;">Café Management</h3>
 
     <table>
       <tr>
@@ -25,8 +25,8 @@
       </tr>
 
       <tr>
-        <th>Numero de contato: <%= contactNumber %></th>
-        <th>Mét.Pagamento: <%= paymentMethod %></th>
+        <th>Número de contato: <%= contactNumber %></th>
+        <th>Método de Pagamento: <%= paymentMethod %></th>
       </tr>
     </table>
 
@@ -41,20 +41,22 @@
         <th>Total</th>
       </tr>
 
-      <% if(productDetails.length > 0) { %> <% productDetails.forEach(product =>
-      { %>
-
-      <tr>
-        <td><%=product.name %></td>
-        <td><%=product.category %></td>
-        <td><%=product.quantity %></td>
-        <td>R$<%=product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) %></td>
-        <td>R$<%=product.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) %></td>
-      </tr>
-      <%});%> <%}%>
+      <% if(productDetails.length > 0) { %> 
+        <% productDetails.forEach(product => { %>
+          <tr>
+            <td><%= product.name %></td>
+            <td><%= product.category %></td>
+            <td><%= product.quantity %></td>
+            <td>R$<%= product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) %></td>
+            <td>R$<%= product.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) %></td>
+          </tr>
+        <% }); %>
+      <% } %>
     </table>
 
-    <h3 style="text-align: center;">Total: R$<%= totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) %></h3>
-    <h3>Obrigado, Volte sempre!</h3>
+    <% var displayTotalAmount = totalAmount !== undefined ? totalAmount : 0; %>
+    <h3 style="text-align: center;">Total: R$<%= displayTotalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) %></h3>
+
+    <h3 style="text-align: center;">Obrigado, Volte sempre!</h3>
   </body>
 </html>
