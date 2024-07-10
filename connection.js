@@ -14,7 +14,7 @@ function connectionDB() {
 
   connection.connect((err) => {
     if (!err) {
-      console.log("Conectado");
+      console.log(`Conectado ${process.env.PORT}` );
     } else {
       console.error("Erro ao conectar:", err);
       reconnect();
